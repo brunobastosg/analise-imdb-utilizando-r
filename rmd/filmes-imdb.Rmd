@@ -1,0 +1,225 @@
+---
+title: 1000 Filmes mais populares de 2006 a 2016 segundo o IMDB
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+r = getOption("repos")
+r["CRAN"] = "http://cran.us.r-project.org"
+options(repos = r)
+if(!require(dplyr)) install.packages("dplyr")
+if(!require(ggplot2)) install.packages("ggplot2")
+if(!require(magrittr)) install.packages("magrittr")
+if(!require(readr)) install.packages("readr")
+if(!require(tidyr)) install.packages("tidyr")
+library(dplyr)
+library(ggplot2)
+library(magrittr)
+library(readr)
+library(stringr)
+library(tidyr)
+# dataset disponível em https://www.kaggle.com/PromptCloudHQ/imdb-data
+filmes = read_csv("../dataset/IMDB-Movie-Data.csv")
+```
+
+Este trabalho utiliza uma base de dados dos 1000 filmes mais populares de 2006 a 2016, segundo o site IMDB.
+
+Logo abaixo, poderá ver um resumo desta base e uma explicação de cada coluna. Em seguida, as perguntas que queremos responder e suas respostas.
+
+```{r}
+head(filmes)
+```
+
+| Variável    | Descrição                                            |
+|-------------|------------------------------------------------------|
+| Rank        | Posição de 1 a 1000 no ranking de popularidade       |
+| Title       | Nome                                                 |
+| Genre       | Gênero (separados por vírgulas se houver mais de um) |
+| Description | Sinopse                                              |
+| Director    | Diretor                                              |
+| Actors      | Elenco principal (separados por vírgulas)            |
+| Year        | Ano de lançamento                                    |
+| Runtime     | Duração (em minutos)                                 |
+| Rating      | Nota do público (0 a 10)                             |
+| Votes       | Número de votos                                      |
+| Revenue     | Arrecadação (em milhões)                             |
+| Metascore   | Nota da crítica (0 a 100)                            |
+
+## Qual diretor tem a maior e a menor nota média do público? E da crítica? E considerando ambos?
+
+Para obter estas respostas, vamos considerar apenas diretores que dirigiram pelo menos 3 filmes.
+
+### Maior/menor nota média do público
+
+```{r}
+filmes %>%
+  group_by(Director) %>%
+  filter(n() >= 3) %>%
+  summarise(`Nota Média Público` = mean(Rating), Filmes = paste(Title, collapse = " / ")) %>%
+  arrange(desc(`Nota Média Público`)) %>%
+  filter(row_number() == 1 | row_number() == n())
+```
+
+### Maior/menor nota média da crítica
+
+```{r}
+filmes %>%
+  group_by(Director) %>%
+  filter(n() >= 3) %>%
+  summarise(`Nota Média Critica` = mean(Metascore, na.rm = TRUE), Filmes = paste(Title, collapse = " / ")) %>%
+  arrange(desc(`Nota Média Critica`)) %>%
+  filter(row_number() == 1 | row_number() == n())
+```
+
+### Maior/menor nota média considerando nota do público e da crítica
+
+```{r}
+filmes %>%
+  mutate(RatingAndMetascore = Rating + Metascore) %>%
+  group_by(Director) %>%
+  filter(n() >= 3) %>%
+  summarise(`Nota Média Geral` = mean(RatingAndMetascore, na.rm = TRUE), Filmes = paste(Title, collapse = " / ")) %>%
+  arrange(desc(`Nota Média Geral`)) %>%
+  filter(row_number() == 1 | row_number() == n())
+```
+
+
+## Quais os diretores que também atuaram nos filmes que dirigiram?
+
+```{r}
+filmes %>%
+  filter(str_detect(Actors, Director)) %>%
+  group_by(Director) %>%
+  summarise(Filmes = paste(Title, collapse = " / "))
+  
+```
+
+
+## Quais os 5 filmes com maiores notas do público e menores arrecadações? E os 5 filmes com menores notas do público e maiores arrecadações?
+
+### Maiores notas do público (acima de 8) e menores arrecadações
+
+```{r}
+filmes %>%
+  filter(Rating > 8) %>%
+  arrange(`Revenue (Millions)`, desc(Rating)) %>%
+  select(Title, Director, Year, Rating, `Revenue (Millions)`) %>%
+  filter(row_number() <= 5)
+```
+
+
+### Maiores arrecadações e menores notas do público (abaixo de 5)
+
+```{r}
+filmes %>%
+  filter(Rating < 5) %>%
+  arrange(desc(`Revenue (Millions)`), Rating) %>%
+  select(Title, Director, Year, Rating, `Revenue (Millions)`) %>%
+  filter(row_number() <= 5)
+```
+
+## Existe algum ator/atriz mais propício a atuar num determinado gênero de filme? Ou com um determinado diretor? Se sim, quem?
+
+### Atores/atrizes mais propícios a atuarem num determinado gênero de filme (considerando 5 ou mais filmes de um gênero)
+```{r}
+filmes %>%
+  separate_rows(Actors, sep = ",") %>%
+  separate_rows(Genre, sep = ",") %>%
+  group_by(Genre) %>%
+  count(Actors, name = "Total") %>%
+  filter(Total == max(Total) & Total >= 5) %>%
+  summarise(Actors = paste(Actors, collapse = " / "), Total = first(Total)) %>%
+  arrange(desc(Total))
+```
+
+### Atores/atrizes mais propícios a trabalhar com um determinado diretor
+
+```{r}
+filmes %>%
+  separate_rows(Actors, sep = ",") %>%
+  group_by(Actors) %>%
+  count(Director, name = "Total") %>%
+  arrange(desc(Total)) %>%
+  filter(Total >= 3)
+```
+
+
+## Há alguma correlação entre a nota do público e a nota da crítica? E entre outras variáveis quaisquer?
+
+```{r}
+filmes = filmes %>% filter(!is.na(`Revenue (Millions)`) & !is.na(Metascore)) # removendo filmes sem valor de arrecadação e sem nota da crítica
+cor(filmes[sapply(filmes, function(x) is.numeric(x))], use = "complete.obs") # utilizando apenas as variáveis numéricas
+```
+
+Como pudemos verificar na tabela acima, há uma correlação moderada entre a nota do público (Rating) e a da crítica (Metascore). Também há uma correlação um pouco mais fraca que a anterior entre o número de votos e a arrecadação em milhões. Vamos plotar os gráficos para avaliar.
+
+```{r}
+ggplot(filmes, aes(x = Rating, y = Metascore)) +
+  geom_point() +
+  geom_smooth(method=lm) + 
+  ggtitle("Nota do Público vs Nota da Crítica")
+```
+
+```{r}
+ggplot(filmes, aes(x = Votes, y = `Revenue (Millions)`)) +
+  geom_point() +
+  geom_smooth(method=lm) + 
+  ggtitle("Número de Votos vs Arrecadação")
+```
+
+## Há como prever a arrecadação do filme a partir de outras variáveis? E a nota do público?
+
+### Arrecadação
+
+Conforme verificamos acima, a arrecadação possui correlação apenas com o número de votos. Vamos tentar então prever a arrecadação a partir do número de votos.
+
+```{r}
+filmes.lm_revenue = lm(`Revenue (Millions)` ~ Votes, data = filmes)
+summary(filmes.lm_revenue)
+```
+
+De acordo com o modelo de regressão acima, o número de votos explica aproximadamente 40% da variação da arrecadação em milhões.
+
+Vamos tentar melhorar este modelo adicionando o diretor, mas só os 10 mais bem sucedidos em arredacação. Essa lista, obtida da [Wikipedia](https://en.wikipedia.org/wiki/List_of_highest-grossing_directors#Worldwide) em julho/2019, é a seguinte:
+
+| Posição | Diretor                |
+|-------------|--------------------|
+| 1       | Steven Spielberg       |
+| 2       | Anthony Russo          |
+| 3       | Peter Jackson          |
+| 4       | Michael Bay            |
+| 5       | James Cameron          |
+| 6       | David Yates            |
+| 7       | Christopher Nolan      |
+| 8       | Tim Burton             |
+| 9       | Robert Zemeckis        |
+| 10      | Ron Howard             |
+
+Vamos criar uma nova coluna que indica se o diretor está na lista acima e refazer o modelo de regressão utilizando-a.
+
+```{r}
+diretores_bem_sucedidos = c("Steven Spielberg", "Anthony Russo", "Peter Jackson", "Michael Bay", "James Cameron", "David Yates", "Christopher Nolan", "Tim Burton", "Robert Zemeckis", "Ron Howard")
+filmes = filmes %>%
+  mutate(DiretorGrandeBilheteria = case_when(
+    Director %in% diretores_bem_sucedidos ~ TRUE,
+    !(Director %in% diretores_bem_sucedidos) ~ FALSE
+  ))
+filmes.lm_director_votes = lm(`Revenue (Millions)` ~ DiretorGrandeBilheteria + Votes, data = filmes)
+summary(filmes.lm_director_votes)
+```
+
+Com isso, melhoramos muito pouco o modelo, conseguindo explicar cerca de 42% da variação da arrecadação caso o filme tenha sido dirigido por um destes 10 diretores.
+
+### Nota do público
+
+A outra correlação que vimos foi a entre a nota do público e da crítica. Vamos tentar prever a nota do público a partir da nota da crítica.
+
+```{r}
+filmes.lm_rating = lm(Rating ~ Metascore, data = filmes)
+summary(filmes.lm_rating)
+```
+
+De acordo com o modelo de regressão acima, a nota da crítica explica aproximadamente 45% da variação da nota do público.
