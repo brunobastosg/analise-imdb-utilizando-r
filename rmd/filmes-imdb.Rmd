@@ -48,11 +48,11 @@ head(filmes)
 | Revenue     | Arrecadação (em milhões)                             |
 | Metascore   | Nota da crítica (0 a 100)                            |
 
-## Qual diretor tem a maior e a menor nota média do público? E da crítica? E considerando ambos?
+## Quais diretores possuem a maior e a menor nota média do público? E da crítica? E considerando ambos?
 
 Para obter estas respostas, vamos considerar apenas diretores que dirigiram pelo menos 3 filmes.
 
-### Maior/menor nota média do público
+### Maiores/menores notas médias do público
 
 ```{r}
 filmes %>%
@@ -60,18 +60,35 @@ filmes %>%
   filter(n() >= 3) %>%
   summarise(`Nota Média Público` = mean(Rating), Filmes = paste(Title, collapse = " / ")) %>%
   arrange(desc(`Nota Média Público`)) %>%
-  filter(row_number() == 1 | row_number() == n())
+  filter(row_number() <= 5 | row_number() >= n() - 5) %>%
+  mutate(Best = row_number() <= 5) %>%
+  ggplot(., aes(x = reorder(Director, -`Nota Média Público`, sum), y = `Nota Média Público`, fill = Best)) +
+  scale_y_continuous(limits = c(0, 10)) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  geom_col(show.legend = FALSE) +
+  xlab("Diretor") +
+  ylab("Nota Média do Público") +
+  geom_text(aes(label = format(`Nota Média Público`, digits = 3)), vjust = 1.6, color = "white", size = 3.5)
 ```
 
-### Maior/menor nota média da crítica
+
+### Maiores/menores notas médias da crítica
 
 ```{r}
 filmes %>%
   group_by(Director) %>%
   filter(n() >= 3) %>%
-  summarise(`Nota Média Critica` = mean(Metascore, na.rm = TRUE), Filmes = paste(Title, collapse = " / ")) %>%
-  arrange(desc(`Nota Média Critica`)) %>%
-  filter(row_number() == 1 | row_number() == n())
+  summarise(`Nota Média Crítica` = mean(Metascore, na.rm = TRUE), Filmes = paste(Title, collapse = " / ")) %>%
+  arrange(desc(`Nota Média Crítica`)) %>%
+  filter(row_number() <= 5 | row_number() >= n() - 5) %>%
+  mutate(Best = row_number() <= 5) %>%
+  ggplot(., aes(x = reorder(Director, -`Nota Média Crítica`), sum, y = `Nota Média Crítica`, fill = Best)) +
+  scale_y_continuous(limits = c(0, 100)) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  geom_col(show.legend = FALSE) +
+  xlab("Diretor") +
+  ylab("Nota Média da Crítica") +
+  geom_text(aes(label = format(`Nota Média Crítica`, digits = 4)), vjust = 1.6, color = "white", size = 3.5)
 ```
 
 ### Maior/menor nota média considerando nota do público e da crítica
@@ -82,8 +99,16 @@ filmes %>%
   group_by(Director) %>%
   filter(n() >= 3) %>%
   summarise(`Nota Média Geral` = mean(RatingAndMetascore, na.rm = TRUE), Filmes = paste(Title, collapse = " / ")) %>%
-  arrange(desc(`Nota Média Geral`)) %>%
-  filter(row_number() == 1 | row_number() == n())
+  arrange(`Nota Média Geral`) %>%
+  filter(row_number() <= 5 | row_number() >= n() - 5) %>%
+  mutate(Best = row_number() <= 5) %>%
+  ggplot(., aes(x = reorder(Director, -`Nota Média Geral`), sum, y = `Nota Média Geral`, fill = Best)) +
+  scale_y_continuous(limits = c(0, 110)) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  geom_col(show.legend = FALSE) +
+  xlab("Diretor") +
+  ylab("Nota Média Geral") +
+  geom_text(aes(label = format(`Nota Média Geral`, digits = 4)), vjust = 1.6, color = "white", size = 3.5)
 ```
 
 
