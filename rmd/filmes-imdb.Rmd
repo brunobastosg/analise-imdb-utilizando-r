@@ -58,7 +58,7 @@ Para obter estas respostas, vamos considerar apenas diretores que dirigiram pelo
 filmes %>%
   group_by(Director) %>%
   filter(n() >= 3) %>%
-  summarise(`Nota Média Público` = mean(Rating), Filmes = paste(Title, collapse = " / ")) %>%
+  summarise(`Nota Média Público` = mean(Rating)) %>%
   arrange(desc(`Nota Média Público`)) %>%
   filter(row_number() <= 5 | row_number() >= n() - 5) %>%
   mutate(Best = row_number() <= 5) %>%
@@ -78,7 +78,7 @@ filmes %>%
 filmes %>%
   group_by(Director) %>%
   filter(n() >= 3) %>%
-  summarise(`Nota Média Crítica` = mean(Metascore, na.rm = TRUE), Filmes = paste(Title, collapse = " / ")) %>%
+  summarise(`Nota Média Crítica` = mean(Metascore, na.rm = TRUE)) %>%
   arrange(desc(`Nota Média Crítica`)) %>%
   filter(row_number() <= 5 | row_number() >= n() - 5) %>%
   mutate(Best = row_number() <= 5) %>%
@@ -98,7 +98,7 @@ filmes %>%
   mutate(RatingAndMetascore = Rating + Metascore) %>%
   group_by(Director) %>%
   filter(n() >= 3) %>%
-  summarise(`Nota Média Geral` = mean(RatingAndMetascore, na.rm = TRUE), Filmes = paste(Title, collapse = " / ")) %>%
+  summarise(`Nota Média Geral` = mean(RatingAndMetascore, na.rm = TRUE)) %>%
   arrange(`Nota Média Geral`) %>%
   filter(row_number() <= 5 | row_number() >= n() - 5) %>%
   mutate(Best = row_number() <= 5) %>%
