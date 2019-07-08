@@ -4,7 +4,7 @@ Este repositório contém uma breve análise dos 1000 filmes mais populares de 2
 
 Na pasta `rmd`, há um arquivo [R Markdown](https://rmarkdown.rstudio.com/) que responde as seguintes perguntas sobre a base de dados:
 
-1. Qual diretor tem a maior e a menor nota média do público? E da crítica? E considerando ambos?
+1. Quais diretores possuem a maior e a menor nota média do público? E da crítica? E considerando ambos?
 2. Quais os diretores que também atuaram nos filmes que dirigiram?
 3. Quais os 5 filmes com maiores notas do público e menores arrecadações? E os 5 filmes com menores notas do público e maiores arrecadações?
 4. Existe algum ator/atriz mais propício a atuar num determinado gênero de filme? Ou com um determinado diretor? Se sim, quem?
